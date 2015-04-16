@@ -2,36 +2,28 @@
 
 namespace Craue\ConfigBundle\Entity;
 
-use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 
 /**
  * @author Christian Raue <christian.raue@gmail.com>
  * @copyright 2011-2015 Christian Raue
  * @license http://opensource.org/licenses/mit-license.php MIT License
- *
- * @ORM\Entity
- * @ORM\Table(name="craue_config_setting")
  */
 class Setting {
 
 	/**
 	 * @var string
-	 * @ORM\Id
-	 * @ORM\Column(name="name", type="string", nullable=false, unique=true)
 	 * @Assert\NotBlank
 	 */
 	protected $name;
 
 	/**
-	 * @var string
-	 * @ORM\Column(name="value", type="string", nullable=true)
+	 * @var string|null
 	 */
 	protected $value;
 
 	/**
-	 * @var string
-	 * @ORM\Column(name="section", type="string", nullable=true)
+	 * @var string|null
 	 */
 	protected $section;
 
