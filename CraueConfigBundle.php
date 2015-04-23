@@ -37,7 +37,7 @@ class CraueConfigBundle extends Bundle {
 		$baseClassExists = class_exists('Symfony\Bridge\Doctrine\DependencyInjection\CompilerPass\RegisterMappingsPass');
 
 		if ($baseClassExists && class_exists('Doctrine\Bundle\DoctrineBundle\DependencyInjection\Compiler\DoctrineOrmMappingsPass')) {
-			$container->addCompilerPass(DoctrineOrmMappingsPass::createXmlMappingDriver($mappings));
+			$container->addCompilerPass(DoctrineOrmMappingsPass::createXmlMappingDriver($mappings, array(), 'craue_config.db_driver.doctrine_orm'));
 		} else {
 			$container->addCompilerPass(RegisterMappingsPass::createOrmMappingDriver($mappings));
 		}

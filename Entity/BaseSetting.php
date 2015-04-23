@@ -9,7 +9,7 @@ use Symfony\Component\Validator\Constraints as Assert;
  * @copyright 2011-2015 Christian Raue
  * @license http://opensource.org/licenses/mit-license.php MIT License
  */
-abstract class BaseSetting {
+abstract class BaseSetting implements SettingInterface {
 
 	/**
 	 * @var string

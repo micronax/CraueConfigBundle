@@ -18,6 +18,9 @@
 			<call method="setEntityManager">
 				<argument type="service" id="doctrine.orm.default_entity_manager" />
 			</call>
+			<call method="setSettingClass">
+				<argument>%craue_config.setting.class%</argument>
+			</call>
 		</service>
 	</services>
 </container>

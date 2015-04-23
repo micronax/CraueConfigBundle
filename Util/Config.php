@@ -2,7 +2,7 @@
 
 namespace Craue\ConfigBundle\Util;
 
-use Craue\ConfigBundle\Entity\Setting;
+use Craue\ConfigBundle\Entity\SettingInterface;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\EntityRepository;
 
@@ -23,8 +23,18 @@ class Config {
 	 */
 	protected $repo;
 
+	/**
+	 * @var string
+	 */
+	protected $settingClass;
+
 	public function setEntityManager(EntityManager $em) {
 		$this->em = $em;
+		$this->repo = null;
+	}
+
+	public function setSettingClass($settingClass) {
+		$this->settingClass = $settingClass;
 		$this->repo = null;
 	}
 
@@ -74,7 +84,7 @@ class Config {
 
 		$settings = $this->em->createQueryBuilder()
 			->select('s')
-			->from(get_class(new Setting()), 's', 's.name')
+			->from($this->settingClass, 's', 's.name')
 			->where('s.name IN (:names)')
 			->getQuery()
 			->execute(array('names' => array_keys($newSettings)))
@@ -107,7 +117,7 @@ class Config {
 	}
 
 	/**
-	 * @param Setting[] $entities
+	 * @param SettingInterface[] $entities
 	 * @return array with name => value
 	 */
 	protected function getAsNamesAndValues(array $settings) {
@@ -125,7 +135,7 @@ class Config {
 	 */
 	protected function getRepo() {
 		if ($this->repo === null) {
-			$this->repo = $this->em->getRepository(get_class(new Setting()));
+			$this->repo = $this->em->getRepository($this->settingClass);
 		}
 
 		return $this->repo;

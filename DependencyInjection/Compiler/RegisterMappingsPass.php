@@ -18,12 +18,14 @@ class RegisterMappingsPass implements CompilerPassInterface {
 	private $driver;
 	private $driverPattern;
 	private $namespaces;
+	private $enabledParameter;
 	private $fallbackManagerParameter;
 
-	public function __construct($driver, $driverPattern, $namespaces, $fallbackManagerParameter) {
+	public function __construct($driver, $driverPattern, $namespaces, $enabledParameter, $fallbackManagerParameter) {
 		$this->driver = $driver;
 		$this->driverPattern = $driverPattern;
 		$this->namespaces = $namespaces;
+		$this->enabledParameter = $enabledParameter;
 		$this->fallbackManagerParameter = $fallbackManagerParameter;
 	}
 
@@ -32,6 +34,10 @@ class RegisterMappingsPass implements CompilerPassInterface {
 	 * @param ContainerBuilder $container
 	 */
 	public function process(ContainerBuilder $container) {
+		if (!$container->hasParameter($this->enabledParameter)) {
+			return;
+		}
+
 		$chainDriverDef = $container->getDefinition($this->getChainDriverServiceName($container));
 		foreach ($this->namespaces as $namespace) {
 			$chainDriverDef->addMethodCall('addDriver', array($this->driver, $namespace));
@@ -52,7 +58,7 @@ class RegisterMappingsPass implements CompilerPassInterface {
 		$locator = new Definition('Doctrine\Common\Persistence\Mapping\Driver\SymfonyFileLocator', array($mappings, '.orm.xml'));
 		$driver = new Definition('Doctrine\ORM\Mapping\Driver\XmlDriver', array($locator));
 
-		return new static($driver, 'doctrine.orm.%s_metadata_driver', $mappings, 'doctrine.default_entity_manager');
+		return new static($driver, 'doctrine.orm.%s_metadata_driver', $mappings, 'craue_config.db_driver.doctrine_orm', 'doctrine.default_entity_manager');
 	}
 
 }

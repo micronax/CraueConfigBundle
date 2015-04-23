@@ -2,7 +2,7 @@
 
 namespace Craue\ConfigBundle\Controller;
 
-use Craue\ConfigBundle\Entity\Setting;
+use Craue\ConfigBundle\Entity\SettingInterface;
 use Craue\ConfigBundle\Form\ModifySettingsForm;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Symfony\Component\HttpFoundation\Request;
@@ -17,7 +17,7 @@ class SettingsController extends Controller {
 
 	public function modifyAction() {
 		$em = $this->getDoctrine()->getManager();
-		$repo = $em->getRepository(get_class(new Setting()));
+		$repo = $em->getRepository($this->container->getParameter('craue_config.setting.class'));
 		$allStoredSettings = $repo->findAll();
 
 		$formData = array(
@@ -57,7 +57,7 @@ class SettingsController extends Controller {
 	}
 
 	/**
-	 * @param Setting[] $settings
+	 * @param SettingInterface[] $settings
 	 * @return string[] (may also contain a null value)
 	 */
 	protected function getSections(array $settings) {
@@ -76,9 +76,9 @@ class SettingsController extends Controller {
 	}
 
 	/**
-	 * @param Setting[] $settings
+	 * @param SettingInterface[] $settings
 	 * @param string $name
-	 * @return Setting|null
+	 * @return SettingInterface|null
 	 */
 	protected function getSettingByName(array $settings, $name) {
 		foreach ($settings as $setting) {
