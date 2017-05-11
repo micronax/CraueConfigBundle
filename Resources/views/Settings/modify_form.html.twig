@@ -7,12 +7,8 @@
 				<legend>{{ section | trans({}, 'CraueConfigBundle') }}</legend>
 		{% endif %}
 
-		{% for setting in form.settings if setting.section.vars.value == section %}
-			{{ form_row(setting.name) }}
-			{{ form_row(setting.section) }}
-			{{ form_row(setting.value, {
-					'label': setting.name.vars.value | trans({}, 'CraueConfigBundle'),
-				}) }}
+		{% for setting in form.settings if setting.vars.value.section == section %}
+			{{ form_row(setting.value) }}
 		{% endfor %}
 
 		{% if section is not empty %}

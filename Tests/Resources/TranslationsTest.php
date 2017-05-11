@@ -2,6 +2,7 @@
 
 namespace Craue\ConfigBundle\Tests\Resources;
 
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\Translation\Loader\YamlFileLoader;
 use Symfony\Component\Yaml\Yaml;
 
@@ -9,10 +10,10 @@ use Symfony\Component\Yaml\Yaml;
  * @group unit
  *
  * @author Christian Raue <christian.raue@gmail.com>
- * @copyright 2011-2016 Christian Raue
+ * @copyright 2011-2017 Christian Raue
  * @license http://opensource.org/licenses/mit-license.php MIT License
  */
-class TranslationsTest extends \PHPUnit_Framework_TestCase {
+class TranslationsTest extends TestCase {
 
 	protected static $defaultLocale = 'en';
 
@@ -24,7 +25,7 @@ class TranslationsTest extends \PHPUnit_Framework_TestCase {
 	 * @dataProvider dataYamlTranslationFileIsValid
 	 */
 	public function testYamlTranslationFileIsValid($filePath) {
-		Yaml::parse(file_get_contents($filePath));
+		$this->assertInternalType('array', Yaml::parse(file_get_contents($filePath)));
 	}
 
 	public function dataYamlTranslationFileIsValid() {

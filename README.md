@@ -1,5 +1,8 @@
 # Information
 
+[![Build Status](https://travis-ci.org/craue/CraueConfigBundle.svg?branch=master)](https://travis-ci.org/craue/CraueConfigBundle)
+[![Coverage Status](https://coveralls.io/repos/github/craue/CraueConfigBundle/badge.svg?branch=master)](https://coveralls.io/github/craue/CraueConfigBundle?branch=master)
+
 CraueConfigBundle manages configuration settings stored in the database and makes them accessible via a service in your
 Symfony project. These settings are similar to those defined in `parameters.yml` but can be modified at runtime, e.g.
 by an admin user.
@@ -11,7 +14,7 @@ by an admin user.
 Let Composer download and install the bundle by running
 
 ```sh
-php composer.phar require craue/config-bundle:~1.4
+php composer.phar require craue/config-bundle:~2.0
 ```
 
 in a shell.
@@ -125,6 +128,62 @@ The Twig extension in this bundle supports reading settings directly in your tem
 {{ craue_setting('name-of-a-setting') }}
 ```
 
+# Enable caching (optional)
+
+To reduce the number of database queries, you can set up a cache for settings. First, you have to choose which cache
+implementation you'd like to use. Currently, there are adapters available for:
+- [DoctrineCacheBundle](https://symfony.com/doc/current/bundles/DoctrineCacheBundle/index.html)
+- [Symfony Cache component](https://symfony.com/doc/current/components/cache.html)
+
+Refer to the documentation of each implementation for details and read on in the corresponding section below. When
+done, `CraueConfigBundle` will automatically cache settings (using the built-in `craue_config_cache_adapter` service).
+
+Keep in mind to clear the cache (if needed) after modifying settings outside of your app (e.g. by Doctrine migrations):
+
+```sh
+# in a shell (run `bin/console` instead of `app/console` if your project is based on Symfony 3)
+php app/console doctrine:cache:clear craue_config_cache
+```
+
+## Cache implementation: DoctrineCacheBundle
+
+Set the parameter `craue_config.cache_adapter.class` appropriately and configure a so-called cache provider with the
+alias `craue_config_cache_provider`:
+
+```yaml
+# in app/config/config.yml
+parameters:
+  craue_config.cache_adapter.class: Craue\ConfigBundle\CacheAdapter\DoctrineCacheBundleAdapter
+
+doctrine_cache:
+  providers:
+    craue_config_cache:
+      apc: ~
+      namespace: craue_config
+      aliases:
+        - craue_config_cache_provider
+```
+
+## Cache implementation: Symfony Cache component
+
+Set the parameter `craue_config.cache_adapter.class` appropriately and configure a so-called cache pool with the
+service id `craue_config_cache_provider`:
+
+```yaml
+# in app/config/config.yml
+parameters:
+  craue_config.cache_adapter.class: Craue\ConfigBundle\CacheAdapter\SymfonyCacheComponentAdapter
+
+services:
+  craue_config_cache_provider:
+    class: Symfony\Component\Cache\Adapter\FilesystemAdapter
+    public: false
+    arguments:
+      - 'craue_config'
+      - 0
+      - '%kernel.cache_dir%'
+```
+
 # Customization
 
 ## Redirect to a different page after submitting the built-in form
@@ -162,4 +221,54 @@ name-of-a-setting: name of the setting
 
 # in app/Resources/CraueConfigBundle/translations/CraueConfigBundle.de.yml
 name-of-a-setting: Name der Einstellung
+```
+
+## Using a custom entity for settings
+
+The custom entity has to provide a mapping for the field `value`. The class `BaseSetting` defines this field, but no
+mapping for it. This allows easy overriding, including the data type. In the following example, the `value` field will
+be mapped to a `text` column, which will in turn render the built-in form fields as `textarea`.
+
+So create the entity and its appropriate mapping:
+
+```php
+// src/MyCompany/MyBundle/Entity/MySetting.php
+use Craue\ConfigBundle\Entity\BaseSetting;
+use Doctrine\ORM\Mapping as ORM;
+
+/**
+ * @ORM\Entity(repositoryClass="Craue\ConfigBundle\Repository\SettingRepository")
+ * @ORM\Table(name="my_setting")
+ */
+class MySetting extends BaseSetting {
+
+	/**
+	 * @var string|null
+	 * @ORM\Column(name="value", type="text", nullable=true)
+	 */
+	protected $value;
+
+	/**
+	 * @var string|null
+	 * @ORM\Column(name="comment", type="string", nullable=true)
+	 */
+	protected $comment;
+
+	public function setComment($comment) {
+		$this->comment = $comment;
+	}
+
+	public function getComment() {
+		return $this->comment;
+	}
+
+}
+```
+
+And make the bundle aware of it:
+
+```yaml
+# in app/config/config.yml
+craue_config:
+  entity_name: MyCompany\MyBundle\Entity\MySetting
 ```

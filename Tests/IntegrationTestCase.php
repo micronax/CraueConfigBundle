@@ -2,26 +2,67 @@
 
 namespace Craue\ConfigBundle\Tests;
 
-use Craue\ConfigBundle\Entity\Setting;
+use Craue\ConfigBundle\Entity\SettingInterface;
+use Craue\ConfigBundle\Repository\SettingRepository;
 use Craue\ConfigBundle\Twig\Extension\ConfigTemplateExtension;
 use Craue\ConfigBundle\Util\Config;
 use Doctrine\ORM\EntityManager;
-use Doctrine\ORM\EntityRepository;
 use Doctrine\ORM\Tools\SchemaTool;
 use Symfony\Bundle\FrameworkBundle\Client;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 /**
  * @author Christian Raue <christian.raue@gmail.com>
- * @copyright 2011-2016 Christian Raue
+ * @copyright 2011-2017 Christian Raue
  * @license http://opensource.org/licenses/mit-license.php MIT License
  */
 abstract class IntegrationTestCase extends WebTestCase {
 
+	const PLATFORM_MYSQL = 'mysql';
+	const PLATFORM_SQLITE = 'sqlite';
+
+	public static function getValidPlatformsWithRequiredExtensions() {
+		return array(
+			self::PLATFORM_MYSQL => 'pdo_mysql',
+			self::PLATFORM_SQLITE => 'pdo_sqlite',
+		);
+	}
+
 	/**
-	 * @var boolean[]
+	 * @var bool[]
 	 */
 	private static $databaseInitialized = array();
+
+	/**
+	 * @param string $testName The name of the test, set by PHPUnit when called directly as a {@code dataProvider}.
+	 * @param string $baseConfig The base config filename.
+	 * @return string[]
+	 */
+	public static function getPlatformConfigs($testName, $baseConfig = 'config.yml') {
+		$testData = array();
+
+		foreach (self::getValidPlatformsWithRequiredExtensions() as $platform => $extension) {
+			$testData[] = array($platform, array($baseConfig, sprintf('config_flavor_%s.yml', $platform)), $extension);
+		}
+
+		return $testData;
+	}
+
+	/**
+	 * @param array $allTestData
+	 * @return array
+	 */
+	public static function duplicateTestDataForEachPlatform(array $allTestData, $baseConfig = 'config.yml') {
+		$testData = array();
+
+		foreach ($allTestData as $oneTestData) {
+			foreach (self::getPlatformConfigs('', $baseConfig) as $envConf) {
+				$testData[] = array_merge($envConf, $oneTestData);
+			}
+		}
+
+		return $testData;
+	}
 
 	/**
 	 * {@inheritDoc}
@@ -35,10 +76,16 @@ abstract class IntegrationTestCase extends WebTestCase {
 
 	/**
 	 * Initializes a client and prepares the database.
-	 * @param array $options options for creating the client
+	 * @param string|null $requiredExtension Required PHP extension.
+	 * @param array $options Options for creating the client.
 	 * @return Client
 	 */
-	protected function initClient(array $options = array()) {
+	protected function initClient($requiredExtension, array $options = array()) {
+		if ($requiredExtension !== null && !in_array($requiredExtension, get_loaded_extensions(), true)) {
+			// !extension_loaded($requiredExtension) doesn't seem to work with HHVM as it returns false even though the extension is loaded
+			$this->markTestSkipped(sprintf('Extension "%s" is not loaded.', $requiredExtension));
+		}
+
 		$client = static::createClient($options);
 		$environment = static::$kernel->getEnvironment();
 
@@ -63,18 +110,10 @@ abstract class IntegrationTestCase extends WebTestCase {
 	}
 
 	/**
-	 * Persists a {@code Setting}.
-	 * @param string $name
-	 * @param string|null $value
-	 * @param string|null $section
-	 * @return Setting
+	 * @param $setting SettingInterface The setting to persist.
+	 * @return SettingInterface The persisted setting.
 	 */
-	protected function persistSetting($name, $value = null, $section = null) {
-		$setting = new Setting();
-		$setting->setName($name);
-		$setting->setValue($value);
-		$setting->setSection($section);
-
+	protected function persistSetting(SettingInterface $setting) {
 		$em = $this->getEntityManager();
 		$em->persist($setting);
 		$em->flush();
@@ -117,10 +156,10 @@ abstract class IntegrationTestCase extends WebTestCase {
 	}
 
 	/**
-	 * @return EntityRepository
+	 * @return SettingRepository
 	 */
 	protected function getSettingsRepo() {
-		return $this->getEntityManager()->getRepository('Craue\ConfigBundle\Entity\Setting');
+		return $this->getEntityManager()->getRepository(static::$kernel->getContainer()->getParameter('craue_config.entity_name'));
 	}
 
 	/**

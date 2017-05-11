@@ -2,21 +2,22 @@
 
 namespace Craue\ConfigBundle\Controller;
 
-use Craue\ConfigBundle\Entity\Setting;
+use Craue\ConfigBundle\Entity\SettingInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Symfony\Component\HttpFoundation\Request;
 
 /**
  * @author Christian Raue <christian.raue@gmail.com>
- * @copyright 2011-2016 Christian Raue
+ * @copyright 2011-2017 Christian Raue
  * @license http://opensource.org/licenses/mit-license.php MIT License
  */
 class SettingsController extends Controller {
 
 	public function modifyAction(Request $request) {
 		$em = $this->getDoctrine()->getManager();
-		$repo = $em->getRepository('Craue\ConfigBundle\Entity\Setting');
+		$repo = $em->getRepository($this->container->getParameter('craue_config.entity_name'));
 		$allStoredSettings = $repo->findAll();
+		$cache = $this->container->get('craue_config_cache_adapter');
 
 		$formData = array(
 			'settings' => $allStoredSettings,
@@ -28,11 +29,12 @@ class SettingsController extends Controller {
 		if ($request->getMethod() === 'POST') {
 			$form->handleRequest($request);
 
-			if ($form->isValid()) {
+			if ($form->isSubmitted() && $form->isValid()) {
 				foreach ($formData['settings'] as $formSetting) {
 					$storedSetting = $this->getSettingByName($allStoredSettings, $formSetting->getName());
 					if ($storedSetting !== null) {
 						$storedSetting->setValue($formSetting->getValue());
+						$cache->set($storedSetting->getName(), $storedSetting->getValue());
 					}
 				}
 
@@ -44,14 +46,14 @@ class SettingsController extends Controller {
 			}
 		}
 
-		return $this->render('CraueConfigBundle:Settings:modify.html.twig', array(
+		return $this->render('@CraueConfig/Settings/modify.html.twig', array(
 			'form' => $form->createView(),
 			'sections' => $this->getSections($allStoredSettings),
 		));
 	}
 
 	/**
-	 * @param Setting[] $settings
+	 * @param SettingInterface[] $settings
 	 * @return string[] (may also contain a null value)
 	 */
 	protected function getSections(array $settings) {
@@ -70,9 +72,9 @@ class SettingsController extends Controller {
 	}
 
 	/**
-	 * @param Setting[] $settings
+	 * @param SettingInterface[] $settings
 	 * @param string $name
-	 * @return Setting|null
+	 * @return SettingInterface|null
 	 */
 	protected function getSettingByName(array $settings, $name) {
 		foreach ($settings as $setting) {

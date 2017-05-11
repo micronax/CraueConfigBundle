@@ -2,150 +2,184 @@
 
 namespace Craue\ConfigBundle\Util;
 
-use Craue\ConfigBundle\Entity\Setting;
+use Craue\ConfigBundle\CacheAdapter\CacheAdapterInterface;
+use Craue\ConfigBundle\CacheAdapter\NullAdapter;
+use Craue\ConfigBundle\Entity\SettingInterface;
+use Craue\ConfigBundle\Repository\SettingRepository;
 use Doctrine\ORM\EntityManager;
-use Doctrine\ORM\EntityRepository;
 
 /**
- * @author    Christian Raue <christian.raue@gmail.com>
- * @copyright 2011-2016 Christian Raue
- * @license   http://opensource.org/licenses/mit-license.php MIT License
+ * @author Christian Raue <christian.raue@gmail.com>
+ * @copyright 2011-2017 Christian Raue
+ * @license http://opensource.org/licenses/mit-license.php MIT License
  */
-class Config
-{
+class Config {
 
-    /**
-     * @var EntityManager
-     */
-    protected $em;
+	/**
+	 * @var CacheAdapterInterface
+	 */
+	protected $cache;
 
-    /**
-     * @var EntityRepository
-     */
-    protected $repo;
+	/**
+	 * @var EntityManager
+	 */
+	protected $em;
 
-    public function setEntityManager(EntityManager $em)
-    {
-        $this->em   = $em;
-        $this->repo = null;
-    }
+	/**
+	 * @var SettingRepository
+	 */
+	protected $repo;
 
-    /**
-     * @param string $name Name of the setting.
-     *
-     * @return string|null Value of the setting.
-     */
-    public function get($name, $default = null)
-    {
-        $setting = $this->getRepo()->findOneBy(
-            array(
-                'name' => $name,
-            )
-        );
+	/**
+	 * @var string
+	 */
+	protected $entityName;
 
-        if ($setting === null) {
-            return $default;
-        }
+	public function __construct(CacheAdapterInterface $cache = null) {
+		$this->setCache($cache !== null ? $cache : new NullAdapter());
+	}
 
-        return $setting->getValue();
-    }
+	public function setCache(CacheAdapterInterface $cache) {
+		$this->cache = $cache;
+	}
 
-    /**
-     * @param string      $name  Name of the setting to update.
-     * @param string|null $value New value for the setting.
-     *
-     * @throws \RuntimeException If the setting is not defined.
-     */
-    public function set($name, $value)
-    {
-        $setting = $this->getRepo()->findOneBy(
-            array(
-                'name' => $name,
-            )
-        );
+	public function setEntityManager(EntityManager $em) {
+		if ($this->em !== $em) {
+			if ($this->em !== null) {
+				$this->cache->clear();
+			}
 
-        if ($setting === null) {
-            $setting = new Setting();
-            $setting->setName($name);
-        }
+			$this->em = $em;
+			$this->repo = null;
+		}
+	}
 
-        $setting->setValue($value);
-        $this->em->persist($setting);
-        $this->em->flush();
-    }
+	public function setEntityName($entityName) {
+		$this->entityName = $entityName;
+		$this->repo = null;
+	}
 
-    /**
-     * @param array $newSettings List of settings (as name => value) to update.
-     *
-     * @throws \RuntimeException If at least one of the settings is not defined.
-     */
-    public function setMultiple(array $newSettings)
-    {
-        if (empty($newSettings)) {
-            return;
-        }
+	/**
+	 * @param string $name Name of the setting.
+	 * @return string|null Value of the setting.
+	 * @throws \RuntimeException If the setting is not defined.
+	 */
+	public function get($name, $default = null) {
+		if ($this->cache->has($name)) {
+			return $this->cache->get($name);
+		}
 
-        $settings = $this->em->createQueryBuilder()
-                             ->select('s')
-                             ->from('Craue\ConfigBundle\Entity\Setting', 's', 's.name')
-                             ->where('s.name IN (:names)')
-                             ->getQuery()
-                             ->execute(array('names' => array_keys($newSettings)));
+		$setting = $this->getRepo()->findOneBy(array(
+			'name' => $name,
+		));
 
-        foreach ($newSettings as $name => $value) {
-            if ( ! isset($settings[$name])) {
-                throw $this->createNotFoundException($name);
-            }
+		if ($setting === null) {
+			return $default;
+		}
 
-            $settings[$name]->setValue($value);
-        }
+		$this->cache->set($name, $setting->getValue());
 
-        $this->em->flush();
-    }
+		return $setting->getValue();
+	}
 
-    /**
-     * @return array with name => value
-     */
-    public function all()
-    {
-        return $this->getAsNamesAndValues($this->getRepo()->findAll());
-    }
+	/**
+	 * @param string $name Name of the setting to update.
+	 * @param string|null $value New value for the setting.
+	 * @throws \RuntimeException If the setting is not defined.
+	 */
+	public function set($name, $value) {
+		$setting = $this->getRepo()->findOneBy(array(
+			'name' => $name,
+		));
 
-    /**
-     * @param string|null $section Name of the section to fetch settings for.
-     *
-     * @return array with name => value
-     */
-    public function getBySection($section)
-    {
-        return $this->getAsNamesAndValues($this->getRepo()->findBy(array('section' => $section)));
-    }
+		if ($setting === null) {
+			throw $this->createNotFoundException($name);
+		}
 
-    /**
-     * @param Setting[] $entities
-     *
-     * @return array with name => value
-     */
-    protected function getAsNamesAndValues(array $settings)
-    {
-        $result = array();
+		$setting->setValue($value);
+		$this->em->flush($setting);
 
-        foreach ($settings as $setting) {
-            $result[$setting->getName()] = $setting->getValue();
-        }
+		$this->cache->set($name, $value);
+	}
 
-        return $result;
-    }
+	/**
+	 * @param array $newSettings List of settings (as name => value) to update.
+	 * @throws \RuntimeException If at least one of the settings is not defined.
+	 */
+	public function setMultiple(array $newSettings) {
+		if (empty($newSettings)) {
+			return;
+		}
 
-    /**
-     * @return EntityRepository
-     */
-    protected function getRepo()
-    {
-        if ($this->repo === null) {
-            $this->repo = $this->em->getRepository('Craue\ConfigBundle\Entity\Setting');
-        }
+		$settings = $this->getRepo()->findByNames(array_keys($newSettings));
 
-        return $this->repo;
-    }
+		foreach ($newSettings as $name => $value) {
+			if (!isset($settings[$name])) {
+				throw $this->createNotFoundException($name);
+			}
+
+			$settings[$name]->setValue($value);
+		}
+
+		$this->em->flush();
+
+		$this->cache->setMultiple($newSettings);
+	}
+
+	/**
+	 * @return array with name => value
+	 */
+	public function all() {
+		$settings = $this->getAsNamesAndValues($this->getRepo()->findAll());
+
+		$this->cache->setMultiple($settings);
+
+		return $settings;
+	}
+
+	/**
+	 * @param string|null $section Name of the section to fetch settings for.
+	 * @return array with name => value
+	 */
+	public function getBySection($section) {
+		$settings = $this->getAsNamesAndValues($this->getRepo()->findBy(array('section' => $section)));
+
+		$this->cache->setMultiple($settings);
+
+		return $settings;
+	}
+
+	/**
+	 * @param SettingInterface[] $entities
+	 * @return array with name => value
+	 */
+	protected function getAsNamesAndValues(array $settings) {
+		$result = array();
+
+		foreach ($settings as $setting) {
+			$result[$setting->getName()] = $setting->getValue();
+		}
+
+		return $result;
+	}
+
+	/**
+	 * @return SettingRepository
+	 */
+	protected function getRepo() {
+		if ($this->repo === null) {
+			$this->repo = $this->em->getRepository($this->entityName);
+		}
+
+		return $this->repo;
+	}
+
+	/**
+	 * @param string $name Name of the setting.
+	 * @return \RuntimeException
+	 */
+	protected function createNotFoundException($name) {
+		return new \RuntimeException(sprintf('Setting "%s" couldn\'t be found.', $name));
+	}
+
 }

@@ -6,7 +6,7 @@ use Craue\ConfigBundle\Util\Config;
 
 /**
  * @author Christian Raue <christian.raue@gmail.com>
- * @copyright 2011-2016 Christian Raue
+ * @copyright 2011-2017 Christian Raue
  * @license http://opensource.org/licenses/mit-license.php MIT License
  */
 class ConfigTemplateExtension extends \Twig_Extension {
@@ -46,12 +46,6 @@ class ConfigTemplateExtension extends \Twig_Extension {
 	 * {@inheritDoc}
 	 */
 	public function getFilters() {
-		if (version_compare(\Twig_Environment::VERSION, '1.12', '<')) {
-			return array(
-				'craue_sortSections' => new \Twig_Filter_Method($this, 'sortSections'),
-			);
-		}
-
 		return array(
 			new \Twig_SimpleFilter('craue_sortSections', array($this, 'sortSections')),
 		);
@@ -61,12 +55,6 @@ class ConfigTemplateExtension extends \Twig_Extension {
 	 * {@inheritDoc}
 	 */
 	public function getFunctions() {
-		if (version_compare(\Twig_Environment::VERSION, '1.12', '<')) {
-			return array(
-				'craue_setting' => new \Twig_Function_Method($this, 'getSetting'),
-			);
-		}
-
 		return array(
 			new \Twig_SimpleFunction('craue_setting', array($this, 'getSetting')),
 		);

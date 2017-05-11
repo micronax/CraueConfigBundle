@@ -2,29 +2,47 @@
 
 namespace Craue\ConfigBundle\Form\Type;
 
+use Craue\ConfigBundle\Entity\SettingInterface;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Component\Form\FormInterface;
+use Symfony\Component\Form\FormView;
 use Symfony\Component\OptionsResolver\OptionsResolver;
-use Symfony\Component\OptionsResolver\OptionsResolverInterface;
 
 /**
  * @author Christian Raue <christian.raue@gmail.com>
- * @copyright 2011-2016 Christian Raue
+ * @copyright 2011-2017 Christian Raue
  * @license http://opensource.org/licenses/mit-license.php MIT License
  */
 class SettingType extends AbstractType {
 
 	/**
+	 * @var string
+	 */
+	protected $entityName;
+
+	public function __construct($entityName) {
+		$this->entityName = $entityName;
+	}
+
+	/**
 	 * {@inheritDoc}
 	 */
 	public function buildForm(FormBuilderInterface $builder, array $options) {
-		$useFqcn = method_exists('Symfony\Component\Form\AbstractType', 'getBlockPrefix');
-
-		$builder->add('name', $useFqcn ? 'Symfony\Component\Form\Extension\Core\Type\HiddenType' : 'hidden');
-		$builder->add('section', $useFqcn ? 'Symfony\Component\Form\Extension\Core\Type\HiddenType' : 'hidden');
-		$builder->add('value', $useFqcn ? 'Symfony\Component\Form\Extension\Core\Type\TextType' : 'text', array(
+		$builder->add('value', null, array(
 			'required' => false,
+			'translation_domain' => 'CraueConfigBundle',
 		));
+	}
+
+	/**
+	 * {@inheritdoc}
+	 */
+	public function finishView(FormView $view, FormInterface $form, array $options) {
+		/* @var $setting SettingInterface */
+		$setting = $form->getData();
+
+		$view->children['value']->vars['label'] = $setting->getName();
 	}
 
 	/**
@@ -32,15 +50,8 @@ class SettingType extends AbstractType {
 	 */
 	public function configureOptions(OptionsResolver $resolver) {
 		$resolver->setDefaults(array(
-			'data_class' => 'Craue\ConfigBundle\Entity\Setting',
+			'data_class' => $this->entityName,
 		));
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	public function setDefaultOptions(OptionsResolverInterface $resolver) {
-		$this->configureOptions($resolver);
 	}
 
 	/**
