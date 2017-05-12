@@ -93,7 +93,8 @@ class Config {
 		));
 
 		if ($setting === null) {
-			throw $this->createNotFoundException($name);
+		    $setting = new Setting();
+		    $setting->setName($name);
 		}
 
 		$setting->setValue($value);
