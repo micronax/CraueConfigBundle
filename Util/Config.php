@@ -6,6 +6,7 @@ use Craue\ConfigBundle\CacheAdapter\CacheAdapterInterface;
 use Craue\ConfigBundle\CacheAdapter\NullAdapter;
 use Craue\ConfigBundle\Entity\SettingInterface;
 use Craue\ConfigBundle\Repository\SettingRepository;
+use Craue\ConfigBundle\Entity\Setting;
 use Doctrine\ORM\EntityManager;
 
 /**
