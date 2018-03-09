@@ -10,6 +10,6 @@
 	xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping http://doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
 
 	<entity name="Craue\ConfigBundle\Entity\Setting" repository-class="Craue\ConfigBundle\Repository\SettingRepository" table="craue_config_setting">
-		<field name="value" column="value" type="string" nullable="true" />
+		<field name="value" column="value" type="text" nullable="true" />
 	</entity>
 </doctrine-mapping>
