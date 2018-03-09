@@ -1,9 +1,9 @@
 {
-	"name": "craue/config-bundle",
+	"name": "sentence/config-bundle",
 	"type": "symfony-bundle",
 	"description": "Database-stored settings made available via a service for your Symfony project.",
 	"keywords": ["config", "symfony2", "symfony3", "symfony4"],
-	"homepage": "https://github.com/craue/CraueConfigBundle",
+	"homepage": "https://github.com/Sentence/CraueConfigBundle",
 	"license": "MIT",
 	"authors": [
 		{
