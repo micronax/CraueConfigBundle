@@ -60,11 +60,12 @@ class Config {
 		$this->repo = null;
 	}
 
-	/**
-	 * @param string $name Name of the setting.
-	 * @return string|null Value of the setting.
-	 * @throws \RuntimeException If the setting is not defined.
-	 */
+    /**
+     * @param string $name Name of the setting.
+     * @param null   $default
+     *
+     * @return string|null Value of the setting.
+     */
 	public function get($name, $default = null) {
 		if ($this->cache->has($name)) {
 			return $this->cache->get($name);
@@ -83,11 +84,10 @@ class Config {
 		return $setting->getValue();
 	}
 
-	/**
-	 * @param string $name Name of the setting to update.
-	 * @param string|null $value New value for the setting.
-	 * @throws \RuntimeException If the setting is not defined.
-	 */
+    /**
+     * @param string      $name  Name of the setting to update.
+     * @param string|null $value New value for the setting.
+     */
 	public function set($name, $value) {
 		$setting = $this->getRepo()->findOneBy(array(
 			'name' => $name,
