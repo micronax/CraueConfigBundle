@@ -14,7 +14,7 @@ use PHPUnit\Framework\TestCase;
  * @group unit
  *
  * @author Christian Raue <christian.raue@gmail.com>
- * @copyright 2011-2017 Christian Raue
+ * @copyright 2011-2018 Christian Raue
  * @license http://opensource.org/licenses/mit-license.php MIT License
  */
 class ConfigUnitTest extends TestCase {
@@ -350,15 +350,15 @@ class ConfigUnitTest extends TestCase {
 		;
 
 		foreach ($methodsWithReturnValues as $method => $returnValue) {
-			if (!($returnValue instanceof \PHPUnit_Framework_MockObject_Stub_Return)
-					&& !($returnValue instanceof \PHPUnit_Framework_MockObject_Stub_ReturnValueMap)) {
-						$returnValue = $this->returnValue($returnValue);
-					}
+			if (!$returnValue instanceof \PHPUnit_Framework_MockObject_Stub_ReturnValueMap // phpunit-mock-objects < 5.0
+					&& !$returnValue instanceof \PHPUnit\Framework\MockObject\Stub\ReturnValueMap) { // phpunit-mock-objects >= 5.0
+				$returnValue = $this->returnValue($returnValue);
+			}
 
-					$repo->expects($this->once())
-						->method($method)
-						->will($returnValue)
-					;
+			$repo->expects($this->once())
+				->method($method)
+				->will($returnValue)
+			;
 		}
 
 		return $repo;

@@ -8,7 +8,7 @@ use Symfony\Component\HttpFoundation\Request;
 
 /**
  * @author Christian Raue <christian.raue@gmail.com>
- * @copyright 2011-2017 Christian Raue
+ * @copyright 2011-2018 Christian Raue
  * @license http://opensource.org/licenses/mit-license.php MIT License
  */
 class SettingsController extends Controller {
@@ -17,7 +17,7 @@ class SettingsController extends Controller {
 		$em = $this->getDoctrine()->getManager();
 		$repo = $em->getRepository($this->container->getParameter('craue_config.entity_name'));
 		$allStoredSettings = $repo->findAll();
-		$cache = $this->container->get('craue_config_cache_adapter');
+		$cache = $this->get('craue_config_cache_adapter');
 
 		$formData = array(
 			'settings' => $allStoredSettings,
